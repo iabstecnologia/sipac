@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Analítico — SIPAC{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+    <!-- Cabeçalho Principal -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
+        <div>
+            <div class="d-flex align-items-center mb-1">
+                <span class="badge bg-success me-2">Painel de Inteligência</span>
+                <h2 class="fw-bold mb-0">Dashboard de Participações e Capacitação</h2>
+            </div>
+            <p class="text-muted mb-0">Consolidação estratégica de indicadores, frentes de atuação e metas internas do projeto.</p>
+        </div>
+        <div class="d-flex gap-2 mt-3 mt-md-0">
+            <a href="{% url 'participantes:importacao_upload' %}" class="btn btn-success shadow-sm">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i> Importar Planilha (.xlsx)
+            </a>
+            <a href="/admin/participantes/" target="_blank" class="btn btn-outline-secondary">
+                <i class="bi bi-shield-lock me-1"></i> Django Admin
+            </a>
+        </div>
+    </div>
+
+    <!-- Barra de Filtros Dinâmicos -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-funnel-fill text-success me-2"></i>Filtros de Pesquisa
+                {% if is_filtered %}
+                    <span class="badge bg-primary-subtle text-primary ms-2">Filtros Ativos</span>
+                {% endif %}
+            </h6>
+            {% if is_filtered %}
+                <a href="{% url 'participantes:home' %}" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-x-circle me-1"></i> Limpar Filtros
+                </a>
+            {% endif %}
+        </div>
+        <div class="card-body p-3">
+            <form method="get" class="row g-2 align-items-end">
+                <!-- Ano -->
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">Ano da Atividade</label>
+                    <select name="ano" class="form-select form-select-sm">
+                        <option value="">Todos os anos</option>
+                        {% for ano_opt in filter_options.anos %}
+                            <option value="{{ ano_opt }}" {% if filters.ano == ano_opt %}selected{% endif %}>{{ ano_opt }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Estado (UF) -->
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">Estado (UF)</label>
+                    <select name="estado" class="form-select form-select-sm">
+                        <option value="">Todos os estados</option>
+                        {% for sigla, nome in filter_options.estados %}
+                            <option value="{{ sigla }}" {% if filters.estado == sigla %}selected{% endif %}>{{ sigla }} - {{ nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Frente Responsável -->
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">Frente de Atuação</label>
+                    <select name="frente" class="form-select form-select-sm">
+                        <option value="">Todas as frentes</option>
+                        {% for cod, rotulo in filter_options.frentes %}
+                            <option value="{{ cod }}" {% if filters.frente == cod %}selected{% endif %}>{{ rotulo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Meta Interna -->
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">Meta Interna</label>
+                    <select name="meta" class="form-select form-select-sm">
+                        <option value="">Todas as metas</option>
+                        {% for cod, rotulo in filter_options.metas %}
+                            <option value="{{ cod }}" {% if filters.meta == cod %}selected{% endif %}>{{ rotulo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Tipo de Participante -->
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">Público</label>
+                    <select name="tipo_participante" class="form-select form-select-sm">
+                        <option value="">Todos os públicos</option>
+                        {% for cod, rotulo in filter_options.tipos_participante %}
+                            <option value="{{ cod }}" {% if filters.tipo_participante == cod %}selected{% endif %}>{{ rotulo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Busca Textual -->
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">Busca Geral</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="busca" class="form-control" placeholder="Nome, CPF ou evento..." value="{{ filters.busca|default:'' }}">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Cards de KPIs Macro -->
+    <div class="row g-3 mb-4">
+        <!-- Card 1: Total de Participações -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 border-start border-success border-4">
+                <div class="card-body d-flex align-items-center">
+                    <div class="bg-success-subtle text-success p-3 rounded-circle me-3">
+                        <i class="bi bi-people-fill fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase">Total de Participações</div>
+                        <h3 class="fw-bold mb-0 text-success">{{ kpis.total_participacoes|default:0 }}</h3>
+                        <small class="text-muted">Presenças registradas</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Pessoas Únicas (CPFs) -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 border-start border-primary border-4">
+                <div class="card-body d-flex align-items-center">
+                    <div class="bg-primary-subtle text-primary p-3 rounded-circle me-3">
+                        <i class="bi bi-person-badge fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase">Pessoas Únicas (CPFs)</div>
+                        <h3 class="fw-bold mb-0 text-primary">{{ kpis.total_pessoas_unicas|default:0 }}</h3>
+                        <small class="text-muted">Indivíduos distintos atendidos</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Eventos Realizados -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 border-start border-info border-4">
+                <div class="card-body d-flex align-items-center">
+                    <div class="bg-info-subtle text-info p-3 rounded-circle me-3">
+                        <i class="bi bi-calendar-event-fill fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase">Eventos Realizados</div>
+                        <h3 class="fw-bold mb-0 text-dark">{{ kpis.total_eventos|default:0 }}</h3>
+                        <small class="text-muted">Atividades distintas</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Média de Participações por Pessoa -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 border-start border-warning border-4">
+                <div class="card-body d-flex align-items-center">
+                    <div class="bg-warning-subtle text-warning p-3 rounded-circle me-3">
+                        <i class="bi bi-graph-up-arrow fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase">Média por Pessoa</div>
+                        <h3 class="fw-bold mb-0 text-dark">{{ kpis.media_participacoes_por_pessoa|default:"0.0" }}</h3>
+                        <small class="text-muted">Taxa de engajamento contínuo</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção de Gráficos (Linha 1: Evolução Temporal + Estados) -->
+    <div class="row g-4 mb-4">
+        <!-- Gráfico de Linha: Evolução Temporal -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-graph-up text-success me-2"></i>Evolução Cronológica de Participações
+                    </h6>
+                    <span class="badge bg-light text-muted border">Mensal</span>
+                </div>
+                <div class="card-body p-3">
+                    <div style="height: 320px; position: relative;">
+                        <canvas id="chartEvolucao"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de Rosca: Distribuição por Gênero -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-gender-ambiguous text-primary me-2"></i>Distribuição por Gênero
+                    </h6>
+                </div>
+                <div class="card-body p-3 d-flex flex-column justify-content-center">
+                    <div style="height: 260px; position: relative;">
+                        <canvas id="chartGenero"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção de Gráficos (Linha 2: Estados + Comunidades Tradicionais) -->
+    <div class="row g-4 mb-4">
+        <!-- Gráfico de Barras: Participações por Estado (UF) -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-geo-alt-fill text-danger me-2"></i>Participações por Estado (UF)
+                    </h6>
+                    <span class="badge bg-light text-muted border">Distribuição Geográfica</span>
+                </div>
+                <div class="card-body p-3">
+                    <div style="height: 320px; position: relative;">
+                        <canvas id="chartEstado"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de Donut: Comunidades Tradicionais -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-people text-info me-2"></i>Comunidades Tradicionais
+                    </h6>
+                </div>
+                <div class="card-body p-3 d-flex flex-column justify-content-center">
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="chartComunidade"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção de Gráficos (Linha 3: Metas Internas + Frentes Responsáveis) -->
+    <div class="row g-4 mb-4">
+        <!-- Gráfico de Barras Horizontais: Metas Internas -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-bullseye text-warning me-2"></i>Participações por Meta Interna
+                    </h6>
+                </div>
+                <div class="card-body p-3">
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="chartMeta"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de Barras: Frente Responsável -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-diagram-3-fill text-secondary me-2"></i>Participações por Frente de Atuação
+                    </h6>
+                </div>
+                <div class="card-body p-3">
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="chartFrente"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabelas de Detalhes: Ranking por UF e Top Eventos -->
+    <div class="row g-4">
+        <!-- Tabela: Ranking por UF -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-trophy-fill text-warning me-2"></i>Ranking por Estado (UF)
+                    </h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Estado</th>
+                                <th class="text-end">Participações</th>
+                                <th class="text-end" style="width: 140px;">Proporção</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in ranking_estados %}
+                                <tr>
+                                    <td class="text-muted fw-bold">{{ forloop.counter }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary me-1">{{ item.uf }}</span>
+                                        <strong>{{ item.nome }}</strong>
+                                    </td>
+                                    <td class="text-end fw-semibold">{{ item.total }}</td>
+                                    <td class="text-end">
+                                        <div class="d-flex align-items-center justify-content-end">
+                                            <span class="small me-2 text-muted">{{ item.percentual }}%</span>
+                                            <div class="progress flex-grow-1" style="height: 6px; max-width: 60px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ item.percentual }}%;"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">Nenhum dado registrado para exibição.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela: Top Atividades Mais Mobilizadoras -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-star-fill text-warning me-2"></i>Atividades com Maior Volume de Participação
+                    </h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Atividade / Evento</th>
+                                <th style="width: 60px;">UF</th>
+                                <th style="width: 100px;">Data</th>
+                                <th class="text-end" style="width: 90px;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ev in ranking_eventos %}
+                                <tr>
+                                    <td class="text-muted fw-bold">{{ forloop.counter }}</td>
+                                    <td>
+                                        <div class="fw-semibold text-truncate" style="max-width: 250px;" title="{{ ev.nome }}">
+                                            {{ ev.nome }}
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-secondary">{{ ev.estado }}</span></td>
+                                    <td class="small text-muted">{{ ev.data }}</td>
+                                    <td class="text-end fw-bold text-success">{{ ev.total }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">Nenhuma atividade registrada para exibição.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dados seguros injetados para consumo pelo static/js/dashboard.js -->
+{{ charts_data|json_script:"charts-data" }}
+{% endblock %}

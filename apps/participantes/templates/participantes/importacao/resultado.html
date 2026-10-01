@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Importação Concluída — SIPAC{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm text-center p-4">
+                <div class="card-body">
+                    <!-- Ícone de Sucesso -->
+                    <div class="mb-4">
+                        <div class="d-inline-flex align-items-center justify-content-center bg-success-subtle text-success rounded-circle" style="width: 90px; height: 90px;">
+                            <i class="bi bi-check-lg fs-1 fw-bold"></i>
+                        </div>
+                    </div>
+
+                    <h2 class="fw-bold text-success mb-2">Importação Concluída com Sucesso!</h2>
+                    <p class="text-muted mb-4 fs-6">
+                        A persistência atômica da <strong>Fase 2</strong> foi executada e os registros válidos foram consolidados com integridade no banco de dados relacional.
+                    </p>
+
+                    <!-- Resumo Numérico -->
+                    {% if resultado %}
+                        <div class="row g-3 justify-content-center mb-4">
+                            <div class="col-md-4">
+                                <div class="p-3 bg-light rounded-3 border">
+                                    <div class="text-muted small text-uppercase fw-semibold">Participações Gravadas</div>
+                                    <div class="fs-2 fw-bold text-success">{{ resultado.total_imported|default:0 }}</div>
+                                    <small class="text-muted">Novos registros criados</small>
+                                </div>
+                            </div>
+                            {% if resultado.invalid_discarded %}
+                                <div class="col-md-4">
+                                    <div class="p-3 bg-light rounded-3 border">
+                                        <div class="text-muted small text-uppercase fw-semibold">Inconsistências Barradas</div>
+                                        <div class="fs-2 fw-bold text-secondary">{{ resultado.invalid_discarded|default:0 }}</div>
+                                        <small class="text-muted">Não inseridos (proteção)</small>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {% if resultado.total_original %}
+                                <div class="col-md-4">
+                                    <div class="p-3 bg-light rounded-3 border">
+                                        <div class="text-muted small text-uppercase fw-semibold">Total no Arquivo</div>
+                                        <div class="fs-2 fw-bold text-dark">{{ resultado.total_original|default:0 }}</div>
+                                        <small class="text-muted">Linhas auditadas</small>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        {% if resultado.filename %}
+                            <p class="small text-muted mb-4">
+                                <i class="bi bi-file-earmark-check me-1"></i>Arquivo: <strong>{{ resultado.filename }}</strong>
+                            </p>
+                        {% endif %}
+                    {% endif %}
+
+                    <!-- Botões de Ação -->
+                    <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
+                        <a href="{% url 'participantes:home' %}" class="btn btn-success btn-lg px-4 shadow-sm">
+                            <i class="bi bi-speedometer2 me-1"></i> Visualizar Indicadores / Dashboard
+                        </a>
+                        <a href="{% url 'participantes:importacao_upload' %}" class="btn btn-outline-secondary btn-lg px-4">
+                            <i class="bi bi-upload me-1"></i> Importar Outra Planilha
+                        </a>
+                        <a href="/admin/participantes/participacao/" target="_blank" class="btn btn-outline-dark btn-lg px-3">
+                            <i class="bi bi-table me-1"></i> Ver no Admin
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

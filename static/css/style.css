@@ -1,0 +1,63 @@
+/* SIPAC - Estilos Customizados */
+
+:root {
+    --sipac-primary: #198754;
+    --sipac-primary-dark: #146c43;
+    --sipac-primary-light: #d1e7dd;
+    --sipac-bg-subtle: #f8f9fa;
+}
+
+body {
+    background-color: var(--sipac-bg-subtle);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #212529;
+}
+
+/* Navbar */
+.navbar-brand {
+    letter-spacing: 0.5px;
+}
+
+/* Cards */
+.card {
+    border-radius: 0.6rem;
+    transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+}
+
+.card-header {
+    background-color: #ffffff;
+    font-weight: 600;
+}
+
+.kpi-card {
+    border-left: 4px solid var(--sipac-primary);
+}
+
+/* Gráficos Canvas */
+canvas {
+    max-width: 100%;
+}
+
+/* Tabelas */
+.table th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    background-color: #f8f9fa;
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+    padding: 0.4em 0.65em;
+}
+
+/* Rodapé */
+footer {
+    border-top: 1px solid #dee2e6;
+}

@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}SIPAC — Painel Inicial{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0 bg-white p-4">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                    <h2 class="h3 fw-bold text-success mb-1">
+                        <i class="bi bi-shield-check me-2"></i>SIPAC — Sistema Inicializado com Sucesso
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Sistema de Informações de Participação e Capacitação &bull; Gestão Analítica e Auditoria de ATER
+                    </p>
+                </div>
+                <div>
+                    <span class="badge bg-success fs-6 py-2 px-3">
+                        <i class="bi bi-check-circle-fill me-1"></i> Status: {{ system_status }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Card Python & Django -->
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-success-subtle text-success p-3 rounded-circle me-3">
+                        <i class="bi bi-code-slash fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="card-subtitle text-muted mb-1">Stack Core</h6>
+                        <h5 class="card-title fw-bold mb-0">Python & Django</h5>
+                    </div>
+                </div>
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>Python</span>
+                        <strong class="text-dark">v{{ python_version }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>Django</span>
+                        <strong class="text-dark">v{{ django_version }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>Modo Debug</span>
+                        <strong class="text-success">{% if debug_mode %}Ativo (Local){% else %}Desativado{% endif %}</strong>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Banco de Dados -->
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary-subtle text-primary p-3 rounded-circle me-3">
+                        <i class="bi bi-database fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="card-subtitle text-muted mb-1">Persistência</h6>
+                        <h5 class="card-title fw-bold mb-0">Banco de Dados</h5>
+                    </div>
+                </div>
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>Engine</span>
+                        <strong class="text-uppercase text-dark">{{ db_engine }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>Base Ativa</span>
+                        <code class="text-dark">{{ db_name }}</code>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>Driver PostgreSQL</span>
+                        <span class="badge bg-info-subtle text-info">psycopg3 instalado</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Frontend & UI -->
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-warning-subtle text-warning-emphasis p-3 rounded-circle me-3">
+                        <i class="bi bi-palette fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="card-subtitle text-muted mb-1">Interface Web</h6>
+                        <h5 class="card-title fw-bold mb-0">Bootstrap & Charts</h5>
+                    </div>
+                </div>
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>UI Framework</span>
+                        <strong class="text-dark">Bootstrap 5.3 CDN</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>Ícones</span>
+                        <strong class="text-dark">Bootstrap Icons 1.11</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>Gráficos</span>
+                        <span class="badge bg-success-subtle text-success">Chart.js 4.4 CDN</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Roadmap do Projeto -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold">
+                    <i class="bi bi-list-task me-2 text-success"></i>Andamento do Roadmap (SIPAC)
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 15%;">Fase</th>
+                                <th style="width: 45%;">Escopo Principal</th>
+                                <th style="width: 25%;">Tecnologia / Camada</th>
+                                <th style="width: 15%; text-align: center;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="table-success bg-opacity-25">
+                                <td class="fw-bold">FASE 1</td>
+                                <td>Fundação do Projeto & Infraestrutura Inicial</td>
+                                <td>Django 5.2, Settings, Base Template, Static</td>
+                                <td class="text-center"><span class="badge bg-success">Concluído</span></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">FASE 2</td>
+                                <td>Modelagem de Dados & Domínio</td>
+                                <td>Pessoa, Evento, Instituicao, Participacao, Admin</td>
+                                <td class="text-center"><span class="badge bg-warning text-dark">Próximo</span></td>
+                            </tr>
+                            <tr class="text-muted">
+                                <td class="fw-bold">FASE 3</td>
+                                <td>Engenharia do Pipeline de Importação (Core)</td>
+                                <td>Reader, Normalizers, Validators, Processor, Importer</td>
+                                <td class="text-center"><span class="badge bg-secondary">Pendente</span></td>
+                            </tr>
+                            <tr class="text-muted">
+                                <td class="fw-bold">FASE 4</td>
+                                <td>Interface Web de Importação</td>
+                                <td>Upload Form, Preview View, Relatório de Erros</td>
+                                <td class="text-center"><span class="badge bg-secondary">Pendente</span></td>
+                            </tr>
+                            <tr class="text-muted">
+                                <td class="fw-bold">FASE 5</td>
+                                <td>Engenharia do Dashboard Analítico</td>
+                                <td>Queries ORM, Filtros Dinâmicos, Chart.js</td>
+                                <td class="text-center"><span class="badge bg-secondary">Pendente</span></td>
+                            </tr>
+                            <tr class="text-muted">
+                                <td class="fw-bold">FASE 6</td>
+                                <td>Refinamento, Carga Real & Auditoria</td>
+                                <td>CLI de importação, Auditoria de 8.135 registros</td>
+                                <td class="text-center"><span class="badge bg-secondary">Pendente</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

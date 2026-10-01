@@ -1,0 +1,39 @@
+# Ambientes Virtuais
+.venv/
+venv/
+ENV/
+
+# Variáveis de Ambiente
+.env
+
+# Banco de Dados Local
+*.sqlite3
+db.sqlite3
+
+# Planilhas e Arquivos de Dados
+*.xlsx
+*.xls
+*.csv
+
+# Uploads e Arquivos Estáticos Coletados
+media/
+staticfiles/
+
+# Python Cache e Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Testes e Cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDEs e Editores
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store

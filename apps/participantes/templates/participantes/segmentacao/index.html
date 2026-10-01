@@ -1,0 +1,514 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard de Segmentação de Participantes — SIPAC{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+    <!-- Cabeçalho Principal -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
+        <div>
+            <div class="d-flex align-items-center mb-1">
+                <span class="badge bg-primary me-2">Análise de Coortes</span>
+                <h2 class="fw-bold mb-0">Segmentação e Exclusão Estrita de Participantes</h2>
+            </div>
+            <p class="text-muted mb-0">
+                Alocação prioritária de pessoas físicas (CPFs). Cada indivíduo pertence exclusivamente ao primeiro segmento cujos critérios atender.
+            </p>
+        </div>
+        <div class="d-flex gap-2 mt-3 mt-md-0">
+            <form method="post" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reset">
+                <button type="submit" class="btn btn-outline-secondary" onclick="return confirm('Deseja restaurar a configuração padrão de segmentos?');">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Redefinir Padrão
+                </button>
+            </form>
+            <a href="{% url 'participantes:home' %}" class="btn btn-outline-success">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard Geral
+            </a>
+        </div>
+    </div>
+
+    <!-- Painel de Definição de Segmentos e Prioridades -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-sliders text-success me-2"></i>Configuração de Segmentos e Ordem de Prioridade
+            </h6>
+            <span class="badge bg-info-subtle text-info-emphasis">
+                A prioridade segue a ordem vertical (1º tem prioridade máxima)
+            </span>
+        </div>
+        <div class="card-body p-3">
+            <form id="form-segmentacao" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="segments_payload" id="segments-payload" value="">
+
+                <div id="segments-container" class="d-flex flex-column gap-3 mb-3">
+                    {% for seg in segments_config %}
+                        <div class="segment-card card border shadow-xs" data-seg-id="{{ seg.id }}">
+                            <div class="card-header bg-light py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1">
+                                    <span class="badge bg-success segment-order-badge fs-6">Prioridade #{{ forloop.counter }}</span>
+                                    <input type="text" class="form-control form-control-sm segment-name-input fw-semibold" value="{{ seg.name }}" placeholder="Nome do Segmento" style="max-width: 320px;" required>
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-secondary btn-move-up" title="Aumentar prioridade (Mover para Cima)">
+                                        <i class="bi bi-arrow-up"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-move-down" title="Diminuir prioridade (Mover para Baixo)">
+                                        <i class="bi bi-arrow-down"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-remove-segment" title="Excluir este segmento">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-3">
+                                <div class="row g-2 align-items-end">
+                                    <!-- Tipo de Participante -->
+                                    <div class="col-md-2 col-sm-6">
+                                        <label class="form-label small fw-semibold text-muted mb-1">Público / Tipo</label>
+                                        <select class="form-select form-select-sm filter-tipo">
+                                            <option value="">Todos os públicos</option>
+                                            {% for cod, rotulo in filter_options.tipos_participante %}
+                                                <option value="{{ cod }}" {% if seg.filters.tipo_participante == cod %}selected{% endif %}>{{ rotulo }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <!-- Meta Interna -->
+                                    <div class="col-md-2 col-sm-6">
+                                        <label class="form-label small fw-semibold text-muted mb-1">Meta Interna</label>
+                                        <select class="form-select form-select-sm filter-meta">
+                                            <option value="">Todas as metas</option>
+                                            {% for cod, rotulo in filter_options.metas %}
+                                                <option value="{{ cod }}" {% if seg.filters.meta == cod %}selected{% endif %}>{{ rotulo }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <!-- Frente Responsável -->
+                                    <div class="col-md-2 col-sm-6">
+                                        <label class="form-label small fw-semibold text-muted mb-1">Frente de Atuação</label>
+                                        <select class="form-select form-select-sm filter-frente">
+                                            <option value="">Todas as frentes</option>
+                                            {% for cod, rotulo in filter_options.frentes %}
+                                                <option value="{{ cod }}" {% if seg.filters.frente == cod %}selected{% endif %}>{{ rotulo }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <!-- Estado (UF) -->
+                                    <div class="col-md-2 col-sm-6">
+                                        <label class="form-label small fw-semibold text-muted mb-1">Estado (UF)</label>
+                                        <select class="form-select form-select-sm filter-estado">
+                                            <option value="">Todos os estados</option>
+                                            {% for sigla, nome in filter_options.estados %}
+                                                <option value="{{ sigla }}" {% if seg.filters.estado == sigla %}selected{% endif %}>{{ sigla }} - {{ nome }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <!-- Ano -->
+                                    <div class="col-md-2 col-sm-6">
+                                        <label class="form-label small fw-semibold text-muted mb-1">Ano da Atividade</label>
+                                        <select class="form-select form-select-sm filter-ano">
+                                            <option value="">Todos os anos</option>
+                                            {% for ano_opt in filter_options.anos %}
+                                                <option value="{{ ano_opt }}" {% if seg.filters.ano == ano_opt %}selected{% endif %}>{{ ano_opt }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <!-- Gênero -->
+                                    <div class="col-md-2 col-sm-6">
+                                        <label class="form-label small fw-semibold text-muted mb-1">Gênero</label>
+                                        <select class="form-select form-select-sm filter-genero">
+                                            <option value="">Todos os gêneros</option>
+                                            {% for cod, rotulo in filter_options.generos %}
+                                                <option value="{{ cod }}" {% if seg.filters.genero == cod %}selected{% endif %}>{{ rotulo }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <!-- Comunidade Tradicional -->
+                                    <div class="col-md-3 col-sm-6 mt-2">
+                                        <label class="form-label small fw-semibold text-muted mb-1">Comunidade Tradicional</label>
+                                        <select class="form-select form-select-sm filter-comunidade">
+                                            <option value="">Todas</option>
+                                            {% for cod, rotulo in filter_options.comunidades %}
+                                                <option value="{{ cod }}" {% if seg.filters.comunidade == cod %}selected{% endif %}>{{ rotulo }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <!-- Busca Textual -->
+                                    <div class="col-md-3 col-sm-6 mt-2">
+                                        <label class="form-label small fw-semibold text-muted mb-1">Termo / Busca</label>
+                                        <input type="text" class="form-control form-control-sm filter-busca" placeholder="Nome ou CPF..." value="{{ seg.filters.busca|default:'' }}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Botões de Ação do Painel -->
+                <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                    <button type="button" id="btn-add-segment" class="btn btn-outline-success">
+                        <i class="bi bi-plus-circle me-1"></i> Adicionar Segmento
+                    </button>
+                    <button type="submit" id="btn-submit-segmentacao" class="btn btn-success px-4 py-2 fw-bold shadow-sm">
+                        <i class="bi bi-play-circle-fill me-1"></i> ANALISAR SEGMENTOS
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabela Resumo Executivo e Comparativo -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-table text-primary me-2"></i>Matriz Comparativa de Segmentação e Transparência
+            </h6>
+            <div class="small text-muted">
+                Total de Pessoas Únicas Alocadas: <strong class="text-success">{{ analysis.total_unique_participants_allocated }}</strong> | 
+                Total de Participações: <strong class="text-primary">{{ analysis.total_participations_allocated }}</strong>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small text-uppercase">
+                    <tr>
+                        <th style="width: 80px;">Prioridade</th>
+                        <th>Segmento</th>
+                        <th class="text-center" style="width: 130px;">Bruto (A_k)</th>
+                        <th class="text-center text-danger" style="width: 150px;">Excluídos (Anteriores)</th>
+                        <th class="text-center text-success" style="width: 150px;">Efetivo (R_k)</th>
+                        <th class="text-center text-primary" style="width: 140px;">Participações</th>
+                        <th class="text-center" style="width: 140px;">Taxa Alocação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for seg in analysis.segments %}
+                        <tr>
+                            <td><span class="badge bg-success">#{{ seg.definition.order }}</span></td>
+                            <td>
+                                <div class="fw-bold">{{ seg.definition.name }}</div>
+                            </td>
+                            <td class="text-center fw-semibold text-muted">{{ seg.kpis.raw_participants }}</td>
+                            <td class="text-center fw-semibold text-danger">
+                                {% if seg.kpis.excluded_participants > 0 %}
+                                    -{{ seg.kpis.excluded_participants }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </td>
+                            <td class="text-center fw-bold text-success fs-6">{{ seg.kpis.participants }}</td>
+                            <td class="text-center fw-bold text-primary">{{ seg.kpis.participations }}</td>
+                            <td class="text-center">
+                                <div class="progress" style="height: 18px;" title="{{ seg.kpis.retention_percentage }}%">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ seg.kpis.retention_percentage }}%;">
+                                        {{ seg.kpis.retention_percentage }}%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">Nenhum segmento configurado para exibição.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Resultados Detalhados por Segmento (Cards e Gráficos) -->
+    <div class="d-flex flex-column gap-4">
+        {% for seg in analysis.segments %}
+            <div class="card border-0 shadow-sm">
+                <!-- Cabeçalho do Segmento -->
+                <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-success fs-6">Prioridade #{{ seg.definition.order }}</span>
+                        <h5 class="fw-bold mb-0 text-dark">{{ seg.definition.name }}</h5>
+                    </div>
+                    <div>
+                        {% if seg.is_empty %}
+                            <span class="badge bg-secondary">Sem participantes alocados</span>
+                        {% else %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                <i class="bi bi-check-circle-fill me-1"></i> {{ seg.kpis.participants }} Participantes Atribuídos
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <!-- Cards de KPIs de Transparência -->
+                    <div class="row g-3 mb-4">
+                        <!-- Participantes Efetivos -->
+                        <div class="col-xl-3 col-md-6">
+                            <div class="card border-0 shadow-xs h-100 border-start border-success border-4 bg-light">
+                                <div class="card-body p-3 d-flex align-items-center">
+                                    <div class="bg-success-subtle text-success p-3 rounded-circle me-3">
+                                        <i class="bi bi-person-check-fill fs-3"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-muted small fw-semibold text-uppercase">Participantes Efetivos</div>
+                                        <h3 class="fw-bold mb-0 text-success">{{ seg.kpis.participants }}</h3>
+                                        <small class="text-muted">CPFs únicos alocados</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Participações Efetivas -->
+                        <div class="col-xl-3 col-md-6">
+                            <div class="card border-0 shadow-xs h-100 border-start border-primary border-4 bg-light">
+                                <div class="card-body p-3 d-flex align-items-center">
+                                    <div class="bg-primary-subtle text-primary p-3 rounded-circle me-3">
+                                        <i class="bi bi-calendar2-check-fill fs-3"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-muted small fw-semibold text-uppercase">Participações</div>
+                                        <h3 class="fw-bold mb-0 text-primary">{{ seg.kpis.participations }}</h3>
+                                        <small class="text-muted">Presenças do segmento</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Participantes Brutos vs Excluídos -->
+                        <div class="col-xl-3 col-md-6">
+                            <div class="card border-0 shadow-xs h-100 border-start border-warning border-4 bg-light">
+                                <div class="card-body p-3 d-flex align-items-center">
+                                    <div class="bg-warning-subtle text-warning p-3 rounded-circle me-3">
+                                        <i class="bi bi-funnel-fill fs-3"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-muted small fw-semibold text-uppercase">Filtro Bruto</div>
+                                        <h4 class="fw-bold mb-0 text-dark">{{ seg.kpis.raw_participants }}</h4>
+                                        <small class="text-danger fw-semibold">
+                                            -{{ seg.kpis.excluded_participants }} alocados antes
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Atividades & Instituições -->
+                        <div class="col-xl-3 col-md-6">
+                            <div class="card border-0 shadow-xs h-100 border-start border-info border-4 bg-light">
+                                <div class="card-body p-3 d-flex align-items-center">
+                                    <div class="bg-info-subtle text-info p-3 rounded-circle me-3">
+                                        <i class="bi bi-geo-alt-fill fs-3"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-muted small fw-semibold text-uppercase">Abrangência</div>
+                                        <h4 class="fw-bold mb-0 text-info">{{ seg.kpis.eventos }} eventos</h4>
+                                        <small class="text-muted">{{ seg.kpis.instituicoes }} instituições</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if seg.is_empty %}
+                        <div class="alert alert-secondary d-flex align-items-center mb-0" role="alert">
+                            <i class="bi bi-info-circle-fill fs-4 me-3 text-secondary"></i>
+                            <div>
+                                <strong>Nenhum participante alocado neste segmento.</strong>
+                                <p class="mb-0 small text-muted">
+                                    {% if seg.kpis.raw_participants > 0 %}
+                                        Havia {{ seg.kpis.raw_participants }} participante(s) elegível(is) no filtro bruto, porém todos os {{ seg.kpis.excluded_participants }} já foram alocados em segmentos de maior prioridade.
+                                    {% else %}
+                                        Nenhum registro atendeu aos critérios deste segmento.
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Gráficos do Segmento -->
+                        <div class="row g-3 mb-4">
+                            <!-- Gráfico de Gênero -->
+                            <div class="col-xl-3 col-md-6">
+                                <div class="card border shadow-xs h-100">
+                                    <div class="card-header bg-white py-2 fw-semibold small text-muted">
+                                        <i class="bi bi-gender-ambiguous me-1 text-primary"></i> Participantes por Gênero
+                                    </div>
+                                    <div class="card-body p-3 position-relative" style="height: 250px;">
+                                        <canvas id="chart-genero-{{ seg.definition.id }}"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Gráfico de Comunidade Tradicional -->
+                            <div class="col-xl-3 col-md-6">
+                                <div class="card border shadow-xs h-100">
+                                    <div class="card-header bg-white py-2 fw-semibold small text-muted">
+                                        <i class="bi bi-people-fill me-1 text-success"></i> Comunidades Tradicionais
+                                    </div>
+                                    <div class="card-body p-3 position-relative" style="height: 250px;">
+                                        <canvas id="chart-comunidade-{{ seg.definition.id }}"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Gráfico de Estados UF -->
+                            <div class="col-xl-6 col-md-12">
+                                <div class="card border shadow-xs h-100">
+                                    <div class="card-header bg-white py-2 fw-semibold small text-muted">
+                                        <i class="bi bi-map me-1 text-info"></i> Participantes por Estado (UF)
+                                    </div>
+                                    <div class="card-body p-3 position-relative" style="height: 250px;">
+                                        <canvas id="chart-estado-{{ seg.definition.id }}"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ranking de Atividades do Segmento -->
+                        {% if seg.ranking_eventos %}
+                            <div class="card border shadow-xs">
+                                <div class="card-header bg-white py-2 fw-semibold small text-muted">
+                                    <i class="bi bi-trophy me-1 text-warning"></i> Principais Eventos Realizados pelo Segmento
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover align-middle mb-0">
+                                        <thead class="table-light small">
+                                            <tr>
+                                                <th style="width: 50px;">#</th>
+                                                <th>Nome do Evento / Atividade</th>
+                                                <th style="width: 80px;">UF</th>
+                                                <th style="width: 110px;">Data</th>
+                                                <th class="text-end" style="width: 100px;">Presenças</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for ev in seg.ranking_eventos %}
+                                                <tr>
+                                                    <td class="text-muted">{{ forloop.counter }}</td>
+                                                    <td class="fw-semibold">{{ ev.nome }}</td>
+                                                    <td><span class="badge bg-secondary">{{ ev.estado }}</span></td>
+                                                    <td class="small text-muted">{{ ev.data }}</td>
+                                                    <td class="text-end fw-bold text-success">{{ ev.total }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Template Oculto para Novos Segmentos Criados no JS -->
+<template id="segment-template">
+    <div class="segment-card card border shadow-xs" data-seg-id="">
+        <div class="card-header bg-light py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 flex-grow-1">
+                <span class="badge bg-success segment-order-badge fs-6">Prioridade #1</span>
+                <input type="text" class="form-control form-control-sm segment-name-input fw-semibold" value="Novo Segmento" placeholder="Nome do Segmento" style="max-width: 320px;" required>
+            </div>
+            <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-outline-secondary btn-move-up" title="Aumentar prioridade">
+                    <i class="bi bi-arrow-up"></i>
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-move-down" title="Diminuir prioridade">
+                    <i class="bi bi-arrow-down"></i>
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-remove-segment" title="Excluir este segmento">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-3">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">Público / Tipo</label>
+                    <select class="form-select form-select-sm filter-tipo">
+                        <option value="">Todos os públicos</option>
+                        {% for cod, rotulo in filter_options.tipos_participante %}
+                            <option value="{{ cod }}">{{ rotulo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">Meta Interna</label>
+                    <select class="form-select form-select-sm filter-meta">
+                        <option value="">Todas as metas</option>
+                        {% for cod, rotulo in filter_options.metas %}
+                            <option value="{{ cod }}">{{ rotulo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">Frente de Atuação</label>
+                    <select class="form-select form-select-sm filter-frente">
+                        <option value="">Todas as frentes</option>
+                        {% for cod, rotulo in filter_options.frentes %}
+                            <option value="{{ cod }}">{{ rotulo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">Estado (UF)</label>
+                    <select class="form-select form-select-sm filter-estado">
+                        <option value="">Todos os estados</option>
+                        {% for sigla, nome in filter_options.estados %}
+                            <option value="{{ sigla }}">{{ sigla }} - {{ nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">Ano da Atividade</label>
+                    <select class="form-select form-select-sm filter-ano">
+                        <option value="">Todos os anos</option>
+                        {% for ano_opt in filter_options.anos %}
+                            <option value="{{ ano_opt }}">{{ ano_opt }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">Gênero</label>
+                    <select class="form-select form-select-sm filter-genero">
+                        <option value="">Todos os gêneros</option>
+                        {% for cod, rotulo in filter_options.generos %}
+                            <option value="{{ cod }}">{{ rotulo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 col-sm-6 mt-2">
+                    <label class="form-label small fw-semibold text-muted mb-1">Comunidade Tradicional</label>
+                    <select class="form-select form-select-sm filter-comunidade">
+                        <option value="">Todas</option>
+                        {% for cod, rotulo in filter_options.comunidades %}
+                            <option value="{{ cod }}">{{ rotulo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 col-sm-6 mt-2">
+                    <label class="form-label small fw-semibold text-muted mb-1">Termo / Busca</label>
+                    <input type="text" class="form-control form-control-sm filter-busca" placeholder="Nome ou CPF...">
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Dados dos Gráficos serializados para consumo pelo JS -->
+{{ analysis_json|json_script:"segmentacao-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/segmentacao.js' %}"></script>
+{% endblock %}
