@@ -346,8 +346,73 @@ class SegmentacaoServiceTests(TestCase):
         idx_fem = genero_chart["labels"].index("Feminino")
         self.assertEqual(genero_chart["data"][idx_fem], 1)
 
+    def test_grafico_faixa_etaria_calculado_com_precisao(self):
+        """
+        Valida que o novo gráfico de Faixa Etária classifica corretamente:
+        - Jovem de 16 a 29 anos
+        - Adultos de 30 a 59 anos
+        - Idosos maiores de 60 anos
+        - Não Informado
+        E garante que a soma bate com os participantes efetivos.
+        """
+        today = date.today()
+
+        pjovem = Pessoa.objects.create(
+            cpf="77777777771",
+            nome="Jovem Teste",
+            genero=Genero.MASCULINO,
+            data_nascimento=date(today.year - 20, today.month, today.day),
+        )
+        padulto = Pessoa.objects.create(
+            cpf="77777777772",
+            nome="Adulto Teste",
+            genero=Genero.FEMININO,
+            data_nascimento=date(today.year - 45, today.month, today.day),
+        )
+        pidoso = Pessoa.objects.create(
+            cpf="77777777773",
+            nome="Idoso Teste",
+            genero=Genero.MASCULINO,
+            data_nascimento=date(today.year - 65, today.month, today.day),
+        )
+        psemdata = Pessoa.objects.create(
+            cpf="77777777774",
+            nome="Sem Data Teste",
+            genero=Genero.FEMININO,
+            data_nascimento=None,
+        )
+
+        Participacao.objects.create(codigo="FX-01", pessoa=pjovem, evento=self.evento_dcs, tipo_participante=TipoParticipante.PRODUTOR_RURAL)
+        Participacao.objects.create(codigo="FX-02", pessoa=padulto, evento=self.evento_dcs, tipo_participante=TipoParticipante.PRODUTOR_RURAL)
+        Participacao.objects.create(codigo="FX-03", pessoa=pidoso, evento=self.evento_dcs, tipo_participante=TipoParticipante.PRODUTOR_RURAL)
+        Participacao.objects.create(codigo="FX-04", pessoa=psemdata, evento=self.evento_dcs, tipo_participante=TipoParticipante.PRODUTOR_RURAL)
+
+        seg = SegmentDefinition(id="s_fx", name="Segmento Faixa", order=1, filters=DashboardFilter(meta=MetaInterna.DCS))
+        result = self.service.run_segmentation([seg])
+        r = result.segments[0]
+
+        self.assertEqual(r.kpis.participants, 4)
+        faixa_chart = r.charts_data["faixa_etaria"]
+
+        self.assertIn("Jovem de 16 a 29 anos", faixa_chart["labels"])
+        self.assertIn("Adultos de 30 a 59 anos", faixa_chart["labels"])
+        self.assertIn("Idosos maiores de 60 anos", faixa_chart["labels"])
+        self.assertIn("Não Informado", faixa_chart["labels"])
+
+        idx_jovem = faixa_chart["labels"].index("Jovem de 16 a 29 anos")
+        idx_adulto = faixa_chart["labels"].index("Adultos de 30 a 59 anos")
+        idx_idoso = faixa_chart["labels"].index("Idosos maiores de 60 anos")
+        idx_nao_inf = faixa_chart["labels"].index("Não Informado")
+
+        self.assertEqual(faixa_chart["data"][idx_jovem], 1)
+        self.assertEqual(faixa_chart["data"][idx_adulto], 1)
+        self.assertEqual(faixa_chart["data"][idx_idoso], 1)
+        self.assertEqual(faixa_chart["data"][idx_nao_inf], 1)
+        self.assertEqual(sum(faixa_chart["data"]), 4)
+
 
 class SegmentacaoViewTests(TestCase):
+
     """
     Testes de integração da CBV SegmentacaoDashboardView.
     """

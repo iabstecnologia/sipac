@@ -308,5 +308,67 @@ document.addEventListener("DOMContentLoaded", function () {
                 },
             });
         }
+
+        // 3.4 Gráfico de Faixa Etária (Bar)
+        const canvasFaixa = document.getElementById(`chart-faixa-etaria-${segId}`);
+        if (canvasFaixa && charts.faixa_etaria) {
+            const dataFaixa = charts.faixa_etaria;
+            const faixaColorsMap = {
+                "Jovem de 16 a 29 anos": "#20c997",
+                "Adultos de 30 a 59 anos": "#0d6efd",
+                "Idosos maiores de 60 anos": "#fd7e14",
+                "Menores de 16 anos": "#6f42c1",
+                "Não Informado": "#6c757d",
+            };
+            const bgColors = (dataFaixa.labels || []).map(
+                (lbl) => faixaColorsMap[lbl] || "rgba(25, 135, 84, 0.85)"
+            );
+
+            new Chart(canvasFaixa, {
+                type: "bar",
+                data: {
+                    labels: dataFaixa.labels && dataFaixa.labels.length > 0 ? dataFaixa.labels : ["Sem dados"],
+                    datasets: [
+                        {
+                            label: "Participantes",
+                            data: dataFaixa.data && dataFaixa.data.length > 0 ? dataFaixa.data : [0],
+                            backgroundColor: bgColors,
+                            borderRadius: 4,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (ctx) {
+                                    const val = ctx.parsed.y;
+                                    const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                    const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                                    return ` Participantes: ${val.toLocaleString("pt-BR")} (${pct}%)`;
+                                },
+                            },
+                        },
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 },
+                            grid: { color: "rgba(0, 0, 0, 0.05)" },
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { size: 11 },
+                            },
+                        },
+                    },
+                },
+            });
+        }
     });
 });
+

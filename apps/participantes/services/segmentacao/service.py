@@ -4,6 +4,7 @@ Implementa a regra de negócio de exclusão sequencial por CPF (pessoa_id)
 e recálculo integral de indicadores e gráficos por segmento.
 """
 
+from datetime import date
 from typing import Any
 from django.db.models import Count
 from apps.participantes.models import (
@@ -13,7 +14,9 @@ from apps.participantes.models import (
     Genero,
     MetaInterna,
     Participacao,
+    Pessoa,
 )
+
 from apps.participantes.services.dashboard.filters import DashboardFilter
 from apps.participantes.services.dashboard.queries import DashboardQueries
 from .dtos import (
@@ -268,6 +271,58 @@ class SegmentacaoService:
             frente_labels.append(frente_map.get(code, code or "-"))
             frente_data.append(r["total"])
 
+        # 6. Faixa Etária (distinct pessoa_id)
+        # Categorias:
+        # - Jovem de 16 a 29 anos
+        # - Adultos de 30 a 59 anos
+        # - Idosos maiores de 60 anos
+        today = date.today()
+        people_dates = (
+            Pessoa.objects.filter(id__in=effective_qs.values("pessoa_id"))
+            .values_list("data_nascimento", flat=True)
+        )
+        jovens_count = 0
+        adultos_count = 0
+        idosos_count = 0
+        menores_count = 0
+        nao_informado_count = 0
+
+        for dt in people_dates:
+            if not dt:
+                nao_informado_count += 1
+                continue
+            age = today.year - dt.year - ((today.month, today.day) < (dt.month, dt.day))
+            if age < 16:
+                menores_count += 1
+            elif 16 <= age <= 29:
+                jovens_count += 1
+            elif 30 <= age <= 59:
+                adultos_count += 1
+            else:  # age >= 60
+                idosos_count += 1
+
+        faixa_labels: list[str] = [
+            "Jovem de 16 a 29 anos",
+            "Adultos de 30 a 59 anos",
+            "Idosos maiores de 60 anos",
+        ]
+        faixa_data: list[int] = [
+            jovens_count,
+            adultos_count,
+            idosos_count,
+        ]
+
+        if menores_count > 0:
+            faixa_labels.insert(0, "Menores de 16 anos")
+            faixa_data.insert(0, menores_count)
+
+        if nao_informado_count > 0:
+            faixa_labels.append("Não Informado")
+            faixa_data.append(nao_informado_count)
+
+        total_faixa = sum(faixa_data) or 1
+        faixa_percentages = [round((val / total_faixa) * 100, 1) for val in faixa_data]
+
         return {
             "genero": {
                 "labels": genero_labels,
@@ -289,6 +344,11 @@ class SegmentacaoService:
             "frente": {
                 "labels": frente_labels,
                 "data": frente_data,
+            },
+            "faixa_etaria": {
+                "labels": faixa_labels,
+                "data": faixa_data,
+                "percentages": faixa_percentages,
             },
         }
 
@@ -321,4 +381,6 @@ class SegmentacaoService:
             "estado": {"labels": [], "data": []},
             "meta": {"labels": [], "data": []},
             "frente": {"labels": [], "data": []},
+            "faixa_etaria": {"labels": [], "data": [], "percentages": []},
         }
+
