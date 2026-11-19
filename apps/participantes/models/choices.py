@@ -72,6 +72,8 @@ class MetaInterna(models.TextChoices):
     EAD_INTRODUTORIO = "EAD_INTRODUTORIO", "EAD Introdutório"
     OFICINA_LIDERANCA = "OFICINA_LIDERANCA", "Oficina de Liderança"
     EAD_AVANCADO = "EAD_AVANCADO", "EAD Avançado"
+    POLO_PRESENCIAL = "POLO_PRESENCIAL", "Polo Presencial"
+
 
 
 class TipoParticipante(models.TextChoices):

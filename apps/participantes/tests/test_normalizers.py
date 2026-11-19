@@ -168,7 +168,16 @@ class TestNormalizers(unittest.TestCase):
             normalize_meta("EAD Avançado"),
             MetaInterna.EAD_AVANCADO.value,
         )
+        self.assertEqual(
+            normalize_meta("Polo Presencial"),
+            MetaInterna.POLO_PRESENCIAL.value,
+        )
+        self.assertEqual(
+            normalize_meta("POLO PRESENCIAL"),
+            MetaInterna.POLO_PRESENCIAL.value,
+        )
         self.assertIsNone(normalize_meta(None))
+
 
     def test_normalize_estado(self):
         self.assertEqual(normalize_estado("Amazonas"), Estado.AM.value)

@@ -185,7 +185,10 @@ META_MAPPING: dict[str, str] = {
     "OFICINA DE LIDERANÇA": MetaInterna.OFICINA_LIDERANCA.value,
     "EAD AVANCADO": MetaInterna.EAD_AVANCADO.value,
     "EAD AVANÇADO": MetaInterna.EAD_AVANCADO.value,
+    "POLO PRESENCIAL": MetaInterna.POLO_PRESENCIAL.value,
+    "POLOS PRESENCIAIS": MetaInterna.POLO_PRESENCIAL.value,
 }
+
 
 ESTADO_MAPPING: dict[str, str] = {
     # Siglas diretas

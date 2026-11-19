@@ -125,6 +125,7 @@ class TestValidators(unittest.TestCase):
         # Sucesso
         self.assertEqual(validate_choice("M", Genero, "genero", "Gênero"), [])
         self.assertEqual(validate_choice("AM", Estado, "estado", "UF"), [])
+        self.assertEqual(validate_choice(MetaInterna.POLO_PRESENCIAL.value, MetaInterna, "meta_interna", "Meta interna"), [])
 
         # Inválido
         errors = validate_choice("XYZ", Estado, "estado", "UF")
