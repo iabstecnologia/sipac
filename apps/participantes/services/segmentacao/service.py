@@ -107,7 +107,7 @@ class SegmentacaoService:
             raw_qs = segment.filters.apply(base_qs)
 
             # Participantes brutos antes da exclusão
-            raw_people_qs = raw_qs.values("pessoa_id").distinct()
+            raw_people_qs = raw_qs.order_by().values("pessoa_id").distinct()
             raw_participants_count = raw_people_qs.count()
 
             # Aplicação da exclusão sequencial no banco de dados
@@ -116,13 +116,19 @@ class SegmentacaoService:
                 effective_qs = effective_qs.exclude(pessoa_id__in=prev_sq)
 
             # Participantes e participações efetivas
-            effective_people_qs = effective_qs.values("pessoa_id").distinct()
+            effective_people_qs = effective_qs.order_by().values("pessoa_id").distinct()
             effective_participants_count = effective_people_qs.count()
             excluded_participants_count = max(0, raw_participants_count - effective_participants_count)
             effective_participations_count = effective_qs.count()
 
-            # Adiciona os participantes deste segmento à lista de exclusão dos próximos
-            previous_subqueries.append(effective_people_qs)
+            # Adiciona os participantes deste segmento à lista de exclusão dos próximos.
+            # Armazena raw_people_qs (sem subqueries aninhadas) porque a união dos participantes
+            # brutos acumulados até aqui cobre exatamente os mesmos participantes já alocados:
+            # Union(R_1, ..., R_{k-1}) == Union(A_1, ..., A_{k-1}).
+            # Isso evita que o QuerySet aninhe subqueries exponencialmente (2^N), o que
+            # estourava o limite do parser do SQLite (sqlite3.OperationalError: parser stack overflow).
+            if raw_participants_count > 0:
+                previous_subqueries.append(raw_people_qs)
 
             # Construção de KPIs e Gráficos
             if effective_participants_count == 0:
@@ -277,10 +283,12 @@ class SegmentacaoService:
         # - Adultos de 30 a 59 anos
         # - Idosos maiores de 60 anos
         today = date.today()
-        people_dates = (
-            Pessoa.objects.filter(id__in=effective_qs.values("pessoa_id"))
-            .values_list("data_nascimento", flat=True)
-        )
+        people_dates = [
+            r["pessoa__data_nascimento"]
+            for r in effective_qs.order_by()
+            .values("pessoa_id", "pessoa__data_nascimento")
+            .distinct()
+        ]
         jovens_count = 0
         adultos_count = 0
         idosos_count = 0

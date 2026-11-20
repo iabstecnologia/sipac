@@ -410,6 +410,64 @@ class SegmentacaoServiceTests(TestCase):
         self.assertEqual(faixa_chart["data"][idx_nao_inf], 1)
         self.assertEqual(sum(faixa_chart["data"]), 4)
 
+    def test_segmentacao_oito_segmentos_sem_parser_stack_overflow(self):
+        """
+        Garante que a execução de 7 ou mais segmentos (ex: 8 segmentos simultâneos)
+        não cause 'OperationalError: parser stack overflow' no SQLite e mantenha
+        a exclusividade sequencial correta dos participantes.
+        """
+        estados_teste = [
+            Estado.AC,
+            Estado.AL,
+            Estado.AP,
+            Estado.AM,
+            Estado.BA,
+            Estado.CE,
+            Estado.DF,
+            Estado.ES,
+        ]
+        # Cria um evento e uma participação para cada um dos 8 estados
+        defs = []
+        for i, uf in enumerate(estados_teste, 1):
+            evento = Evento.objects.create(
+                nome=f"Evento Estado {uf}",
+                data=date(2025, 1, i),
+                frente_responsavel=FrenteResponsavel.ATER,
+                estado=uf,
+                meta_interna=MetaInterna.DCS,
+            )
+            # Cria pessoa e participação
+            pessoa = Pessoa.objects.create(
+                cpf=f"{i:011d}",
+                nome=f"Pessoa {uf}",
+                genero=Genero.FEMININO,
+                data_nascimento=date(1990, 1, 1),
+            )
+            Participacao.objects.create(
+                codigo=f"PART-UF-{i}",
+                pessoa=pessoa,
+                evento=evento,
+                tipo_participante=TipoParticipante.PRODUTOR_RURAL,
+            )
+            defs.append(
+                SegmentDefinition(
+                    id=f"seg_{i}",
+                    name=f"Segmento {uf}",
+                    order=i,
+                    filters=DashboardFilter(estado=uf),
+                )
+            )
+
+        # Executa segmentação com 8 segmentos
+        result = self.service.run_segmentation(defs)
+        self.assertEqual(len(result.segments), 8)
+        self.assertEqual(result.total_unique_participants_allocated, 8)
+        for seg in result.segments:
+            self.assertEqual(seg.kpis.participants, 1)
+            self.assertEqual(seg.kpis.participations, 1)
+            self.assertFalse(seg.is_empty)
+            self.assertIn("faixa_etaria", seg.charts_data)
+
 
 class SegmentacaoViewTests(TestCase):
 
@@ -449,6 +507,21 @@ class SegmentacaoViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context["analysis"].segments), 2)
         self.assertEqual(response.context["analysis"].segments[0].definition.name, "Meu Segmento 1")
+
+    def test_post_com_oito_segmentos(self):
+        import json
+        payload = [
+            {
+                "id": f"seg_{i}",
+                "name": f"Segmento {i}",
+                "order": i,
+                "filters": {"meta": "DCS"},
+            }
+            for i in range(1, 9)
+        ]
+        response = self.client.post(self.url, {"segments_payload": json.dumps(payload)})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context["analysis"].segments), 8)
 
     def test_post_reset_restaura_padrao(self):
         response = self.client.post(self.url, {"action": "reset"})
